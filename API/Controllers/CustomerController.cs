@@ -13,25 +13,16 @@ namespace API.Controllers
     [ApiController]
     public class CustomerController : ControllerBase
     {
-
         private readonly ICustomerRepository _repository;
-        private readonly IUnitOfWork _unitOfWork;
-
-        public CustomerController(ICustomerRepository repository, IUnitOfWork unitOfWork)
+        public CustomerController(ICustomerRepository repository)
         {
             this._repository = repository;
-            _unitOfWork = unitOfWork;
         }
-
-
-        // GET: api/[controller]
         [HttpGet]
         public async Task<IReadOnlyList<Customer>> Get()
         {
             return await _repository.GetAllAsync();
         }
-
-        // GET: api/[controller]/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Customer>> Get(int id)
         {
@@ -42,8 +33,6 @@ namespace API.Controllers
             }
             return customer;
         }
-
-        // PUT: api/[controller]/5
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, Customer customer)
         {
@@ -52,30 +41,23 @@ namespace API.Controllers
                 return BadRequest();
             }
             await _repository.UpdateAsync(customer);
-            await _unitOfWork.Commit();
             return NoContent();
         }
-
-        // POST: api/[controller]
         [HttpPost]
         public async Task<ActionResult<Customer>> Post(Customer customer)
         {
             await _repository.AddAsync(customer);
-            await _unitOfWork.Commit();
             return CreatedAtAction("Get", new { id = customer.Id }, customer);
         }
-
-        // DELETE: api/[controller]/5
         [HttpDelete("{id}")]
         public async Task<ActionResult<Customer>> Delete(int id)
         {
-            var customer = await _repository.GetByIdAsync(id); 
+            var customer = await _repository.GetByIdAsync(id);
             if (customer == null)
             {
                 return NotFound();
             }
             await _repository.DeleteAsync(customer);
-            await _unitOfWork.Commit();
             return customer;
         }
     }

@@ -25,24 +25,6 @@ namespace Infrastructure.Repository
         {
             return await _dbContext.Set<T>().FindAsync(id);
         }
-        public async Task<T> AddAsync(T entity)
-        {
-            await _dbContext.Set<T>().AddAsync(entity);
-            BackgroundJob.Enqueue(() => RefreshCache());
-            return entity;
-        }
-        public Task UpdateAsync(T entity)
-        {
-            _dbContext.Entry(entity).State = EntityState.Modified;
-            BackgroundJob.Enqueue(() => RefreshCache());
-            return Task.CompletedTask;
-        }
-        public Task DeleteAsync(T entity)
-        {
-            _dbContext.Set<T>().Remove(entity);
-            BackgroundJob.Enqueue(() => RefreshCache());
-            return Task.CompletedTask;
-        }
         public async Task<IReadOnlyList<T>> GetAllAsync()
         {
             if (!_cacheService(cacheTech).TryGet(cacheKey, out IReadOnlyList<T> cachedList))
@@ -52,6 +34,28 @@ namespace Infrastructure.Repository
             }
             return cachedList;
         }
+        public async Task<T> AddAsync(T entity)
+        {
+            await _dbContext.Set<T>().AddAsync(entity);
+            await _dbContext.SaveChangesAsync();
+            BackgroundJob.Enqueue(() => RefreshCache());
+            return entity;
+        }
+
+        public async Task UpdateAsync(T entity)
+        {
+            _dbContext.Entry(entity).State = EntityState.Modified;
+            await _dbContext.SaveChangesAsync();
+            BackgroundJob.Enqueue(() => RefreshCache());
+        }
+
+        public async Task DeleteAsync(T entity)
+        {
+            _dbContext.Set<T>().Remove(entity);
+            await _dbContext.SaveChangesAsync();
+            BackgroundJob.Enqueue(() => RefreshCache());
+        }
+
         public async Task RefreshCache()
         {
             _cacheService(cacheTech).Remove(cacheKey);
